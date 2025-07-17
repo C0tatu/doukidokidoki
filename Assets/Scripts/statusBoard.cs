@@ -13,16 +13,13 @@ public class statusBoard : UdonSharpBehaviour
      * 0:つけない,1:rurune
      */
 
-    private void Start()
+    public void ReqSerialization()
     {
-        for(int i=0; i<pidStatuses.Length; i++)
-        {
-            pidStatuses[i] = 0;
-        }
+        RequestSerialization();
     }
 
     private void Update()
     {
-        RequestSerialization();
+        
     }
 }

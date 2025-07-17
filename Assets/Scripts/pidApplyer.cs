@@ -24,10 +24,17 @@ public class pidApplyer : UdonSharpBehaviour
         {
             Networking.SetOwner(Networking.LocalPlayer, this.gameObject);
         }
+        if (!Networking.IsOwner(stb.gameObject))
+        {
+            Networking.SetOwner(Networking.LocalPlayer, stb.gameObject);
+        }
 
         //どのアバターを使うかを登録,同期
+        int[] temp = (int[])stb.pidStatuses.Clone();
         int pid = Networking.LocalPlayer.playerId;
-        stb.pidStatuses[pid] = avatarNumber;
+        temp[pid] = avatarNumber;
+        stb.pidStatuses = temp;
+        stb.ReqSerialization();
         Debug.Log($"me: {Networking.LocalPlayer.playerId}, pid: {pid}");
         RequestSerialization(); //いらん気もするおまじない
 

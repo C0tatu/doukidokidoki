@@ -146,6 +146,7 @@ public class capsuleApplyer : UdonSharpBehaviour
             for (int j = 0; j < ret[i].Length; j++)
             {
                 ret[i][j] = Instantiate(tmp[j]);
+                ret[i][j].transform.position -= new Vector3(0, 2, 0);
             }
         }
         return ret;

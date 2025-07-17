@@ -34,66 +34,66 @@ public class SoundPlayer : UdonSharpBehaviour
         for(int i=1; i<=VRCPlayerApi.GetPlayerCount(); i++)
         {
             //カプセルついてないやついたら次へ
-            if (stb.pidStatuses[i] == 0) return;
-            for (int j=VRCPlayerApi.GetPlayerCount(); j>i; j--)
-            {
-                //カプセルついてないやついたら次へ
-                if (stb.pidStatuses[j] == 0) return;
-                else
+            if (stb.pidStatuses[i] != 0) {
+                for (int j = VRCPlayerApi.GetPlayerCount(); j > i; j--)
                 {
-                    //つけてるアバターによって計算に使うカプセルを変える
-                    GameObject[] capsules1;
-                    GameObject[] capsules2;
-                    switch (stb.pidStatuses[i])
+                    //カプセルついてないやついたら次へ
+                    if (stb.pidStatuses[j] != 0)
                     {
-                        case 1:
-                            capsules1 = capsuleApplyer.ruruneCapsules[i];
-                            break;
-                        default:
-                            capsules1 = new GameObject[(int)HumanBodyBones.LeftToes];
-                            break;
-                    }
-                    switch (stb.pidStatuses[j])
-                    {
-                        case 1:
-                            capsules2 = capsuleApplyer.ruruneCapsules[j];
-                            break;
-                        default:
-                            capsules2 = new GameObject[(int)HumanBodyBones.LeftToes];
-                            break;
-                    }
-
-                    for(int k=0; k<capsules1.Length; k++)
-                    {
-                        for(int l=0; l<capsules2.Length; l++)
+                        //つけてるアバターによって計算に使うカプセルを変える
+                        GameObject[] capsules1;
+                        GameObject[] capsules2;
+                        switch (stb.pidStatuses[i])
                         {
-                            GameObject tar1 = capsules1[k];
-                            GameObject tar2 = capsules2[l];
-                            //重なってるか
-                            if (calc.isBounds(tar1, tar2))
+                            case 1:
+                                capsules1 = capsuleApplyer.ruruneCapsules[i];
+                                break;
+                            default:
+                                capsules1 = new GameObject[(int)HumanBodyBones.LeftToes];
+                                break;
+                        }
+                        switch (stb.pidStatuses[j])
+                        {
+                            case 1:
+                                capsules2 = capsuleApplyer.ruruneCapsules[j];
+                                break;
+                            default:
+                                capsules2 = new GameObject[(int)HumanBodyBones.LeftToes];
+                                break;
+                        }
+
+                        for (int k = 0; k < capsules1.Length; k++)
+                        {
+                            for (int l = 0; l < capsules2.Length; l++)
                             {
-                                Vector3 v1 = capsuleApplyer.CapsuleVelocities[i][k];
-                                Vector3 v2 = capsuleApplyer.CapsuleVelocities[j][l];
-                                Vector3 angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                                Vector3 angv2 = capsuleApplyer.CapsuleAngVelocities[j][l];
-                                Vector3 frictionV = calc.FrictionCalc(tar1, tar2, v1, v2, angv1, angv2);
-                                Collider c1 = tar1.GetComponent<Collider>();
-                                Collider c2 = tar2.GetComponent<Collider>();
-                                Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
-                                float threshold = 0.25f;
-                                //ここで音を鳴らす
-                                if (!isActiveAuidoNearby(true, soundPoint))//近くに再生中音源がないなら
+                                GameObject tar1 = capsules1[k];
+                                GameObject tar2 = capsules2[l];
+                                //重なってるか
+                                if (calc.isBounds(tar1, tar2))
                                 {
-                                    if (frictionV.magnitude > threshold) // && frictionTop < frictionPairs.Length
+                                    Vector3 v1 = capsuleApplyer.CapsuleVelocities[i][k];
+                                    Vector3 v2 = capsuleApplyer.CapsuleVelocities[j][l];
+                                    Vector3 angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                                    Vector3 angv2 = capsuleApplyer.CapsuleAngVelocities[j][l];
+                                    Vector3 frictionV = calc.FrictionCalc(tar1, tar2, v1, v2, angv1, angv2);
+                                    Collider c1 = tar1.GetComponent<Collider>();
+                                    Collider c2 = tar2.GetComponent<Collider>();
+                                    Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
+                                    float threshold = 0.25f;
+                                    //ここで音を鳴らす
+                                    if (!isActiveAuidoNearby(true, soundPoint))//近くに再生中音源がないなら
                                     {
-                                        int audioSourceNumber = getAvailableAudioSource(FrictionSources);
-                                        if (audioSourceNumber != -1)
+                                        if (frictionV.magnitude > threshold) // && frictionTop < frictionPairs.Length
                                         {
-                                            playSound(FrictionSources[audioSourceNumber], soundPoint, frictionV, true);
-                                        }
-                                        else
-                                        {
-                                            Debug.Log("friction -> -1");
+                                            int audioSourceNumber = getAvailableAudioSource(FrictionSources);
+                                            if (audioSourceNumber != -1)
+                                            {
+                                                playSound(FrictionSources[audioSourceNumber], soundPoint, frictionV, true);
+                                            }
+                                            else
+                                            {
+                                                Debug.Log("friction -> -1");
+                                            }
                                         }
                                     }
                                 }

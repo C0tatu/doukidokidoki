@@ -9,13 +9,40 @@ public class calcFuncs : UdonSharpBehaviour
     /// <summary>
     /// ２つのgameObjectが接触しているかを調べる関数
     /// </summary>
-    public bool isBounds(GameObject obj1, GameObject obj2)
+    public bool isBounds(GameObject obj1, GameObject obj2,Collider c1, Collider c2)
     {
-        Collider collider1 = obj1.GetComponent<Collider>();
-        Collider collider2 = obj2.GetComponent<Collider>();
+        //軽量化のため、一定以上の距離でfalseを返す
+        Vector3 pos1 = obj1.transform.position;
+        Vector3 pos2 = obj2.transform.position;
+        if ((pos1 - pos2).sqrMagnitude > 1.0f) return false;
 
-        if (collider1.bounds.Intersects(collider2.bounds)) return true;
-        else return false;
+
+
+        ////このあとに細かい判定をしないと、、、
+        if (c1.bounds.Intersects(c2.bounds))
+        {
+            Debug.Log("bounded");
+            Vector3 retV;
+            float dist;
+
+            bool a = Physics.ComputePenetration(c1, pos1, obj1.transform.rotation,
+                c2, pos2, obj2.transform.rotation,
+                out retV, out dist);
+
+            if (a)
+            {
+                Debug.Log("gachide");
+                return true;
+            }
+            else {
+                Debug.Log("usodatta");
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
     }
 
 

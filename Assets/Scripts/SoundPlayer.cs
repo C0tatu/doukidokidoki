@@ -43,22 +43,28 @@ public class SoundPlayer : UdonSharpBehaviour
                         //つけてるアバターによって計算に使うカプセルを変える
                         GameObject[] capsules1;
                         GameObject[] capsules2;
+                        Collider[] colliders1;
+                        Collider[] colliders2;
                         switch (stb.pidStatuses[i])
                         {
                             case 1:
                                 capsules1 = capsuleApplyer.ruruneCapsules[i];
+                                colliders1 = capsuleApplyer.ruruneColliders[i];
                                 break;
                             default:
                                 capsules1 = new GameObject[(int)HumanBodyBones.LeftToes];
+                                colliders1 = new Collider[(int)HumanBodyBones.LeftToes];
                                 break;
                         }
                         switch (stb.pidStatuses[j])
                         {
                             case 1:
                                 capsules2 = capsuleApplyer.ruruneCapsules[j];
+                                colliders2 = capsuleApplyer.ruruneColliders[j];
                                 break;
                             default:
                                 capsules2 = new GameObject[(int)HumanBodyBones.LeftToes];
+                                colliders2 = new Collider[(int)HumanBodyBones.LeftToes];
                                 break;
                         }
 
@@ -68,18 +74,154 @@ public class SoundPlayer : UdonSharpBehaviour
                             {
                                 GameObject tar1 = capsules1[k];
                                 GameObject tar2 = capsules2[l];
+                                Collider c1 = colliders1[k];
+                                Collider c2 = colliders2[l];
                                 //重なってるか
-                                if (calc.isBounds(tar1, tar2))
+                                if (calc.isBounds(tar1, tar2,c1,c2))
                                 {
                                     Vector3 v1 = capsuleApplyer.CapsuleVelocities[i][k];
                                     Vector3 v2 = capsuleApplyer.CapsuleVelocities[j][l];
                                     Vector3 angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
                                     Vector3 angv2 = capsuleApplyer.CapsuleAngVelocities[j][l];
                                     Vector3 frictionV = calc.FrictionCalc(tar1, tar2, v1, v2, angv1, angv2);
-                                    Collider c1 = tar1.GetComponent<Collider>();
-                                    Collider c2 = tar2.GetComponent<Collider>();
-                                    Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
+
+                                    //閾値以上なら音関連の計算をする
                                     float threshold = 0.25f;
+                                    if(frictionV.magnitude > threshold)
+                                    {
+                                        Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
+
+                                        //ここで音を鳴らす
+                                        if (!isActiveAuidoNearby(true, soundPoint))//近くに再生中音源がないなら
+                                        {
+                                            if (frictionV.magnitude > threshold) // && frictionTop < frictionPairs.Length
+                                            {
+                                                int audioSourceNumber = getAvailableAudioSource(FrictionSources);
+                                                if (audioSourceNumber != -1)
+                                                {
+                                                    playSound(FrictionSources[audioSourceNumber], soundPoint, frictionV, true);
+                                                }
+                                                else
+                                                {
+                                                    Debug.Log("friction -> -1");
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                    
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //自分自身
+        for(int i=1; i<=VRCPlayerApi.GetPlayerCount(); i++)
+        {
+            //ボタン押してるやつなら
+            if (stb.pidStatuses[i] != 0)
+            {
+                //カプセルを持ってきます
+                GameObject[] capsules;
+                Collider[] colliders;
+                switch (stb.pidStatuses[i])
+                {
+                    case 1:
+                        capsules = capsuleApplyer.ruruneCapsules[i];
+                        colliders = capsuleApplyer.ruruneColliders[i];
+                        break;
+                    default:
+                        capsules = new GameObject[(int)HumanBodyBones.LeftToes];
+                        colliders = new Collider[(int)HumanBodyBones.LeftToes];
+                        break;
+                }
+
+
+                for (int j = 0; j < capsules.Length; j++)
+                {
+                    for (int k = capsules.Length - 1; k > j; k--)
+                    {
+                        GameObject tar1 = capsules[j];
+                        GameObject tar2 = capsules[k];
+                        Collider c1 = colliders[j];
+                        Collider c2 = colliders[k];
+                        //ねじれ
+                        if (isCrumpingPair(tar1.name, tar2.name))
+                        {
+                            Vector3 angv1;
+                            Vector3 angv2;
+                            if (tar1.name.Contains("Shoulder"))
+                            {
+                                angv1 = capsuleApplyer.CapsuleAngVelocities[i][j];
+                                angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                            }
+                            else if (tar2.name.Contains("Shoulder"))
+                            {
+                                angv2 = capsuleApplyer.CapsuleAngVelocities[i][j];
+                                angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                            }
+                            else if (tar1.name.Contains("Upper"))
+                            {
+                                angv1 = capsuleApplyer.CapsuleAngVelocities[i][j];
+                                angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                            }
+                            else
+                            {
+                                angv2 = capsuleApplyer.CapsuleAngVelocities[i][j];
+                                angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                            }
+                            Vector3 crumpingV = calc.CrumpingCalc(angv1, angv2);
+
+                            //閾値以上の速度なら音を鳴らす
+                            float threshold = 0f;
+                            if(crumpingV.magnitude > threshold)
+                            {
+                                Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
+                                //ここで音を鳴らす
+
+
+                                //音再生
+                                if (!isActiveAuidoNearby(false, soundPoint))
+                                {
+                                    if (crumpingV.magnitude > threshold)
+                                    {
+                                        int audioSourceNumber = getAvailableAudioSource(CrumpingSources);
+                                        if (audioSourceNumber != -1)
+                                        {
+                                            playSound(CrumpingSources[audioSourceNumber], soundPoint, crumpingV, false);
+                                        }
+                                        else
+                                        {
+                                            Debug.Log("crumping -> -1");
+                                        }
+                                    }
+
+                                }
+
+                            }
+
+
+                            
+                        }
+                        else
+                        {
+                            if (calc.isBounds(tar1, tar2,c1,c2))//こすれ
+                            {
+
+                                Vector3 v1 = capsuleApplyer.CapsuleVelocities[i][j];
+                                Vector3 v2 = capsuleApplyer.CapsuleVelocities[i][k];
+                                Vector3 angv1 = capsuleApplyer.CapsuleAngVelocities[i][j];
+                                Vector3 angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
+                                Vector3 frictionV = calc.FrictionCalc(tar1, tar2, v1, v2, angv1, angv2);
+
+                                //閾値以上なら音関連の計算をする
+                                float threshold = 0.25f;
+                                if(frictionV.magnitude > threshold)
+                                {
+                                    Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
+
                                     //ここで音を鳴らす
                                     if (!isActiveAuidoNearby(true, soundPoint))//近くに再生中音源がないなら
                                     {
@@ -96,121 +238,17 @@ public class SoundPlayer : UdonSharpBehaviour
                                             }
                                         }
                                     }
+
                                 }
+
                             }
                         }
                     }
                 }
-            }
-        }
-        //自分自身
-        for(int i=1; i<=VRCPlayerApi.GetPlayerCount(); i++)
-        {
-            //カプセルを持ってきます
-            GameObject[] capsules;
-            switch (stb.pidStatuses[i])
-            {
-                case 1:
-                    capsules = capsuleApplyer.ruruneCapsules[i];
-                    break;
-                default:
-                    capsules = new GameObject[(int)HumanBodyBones.LeftToes];
-                    break;
+
             }
 
-
-            for(int j=0; j<capsules.Length; j++)
-            {
-                for(int k = capsules.Length-1; k>j; k--)
-                {
-                    GameObject tar1 = capsules[j];
-                    GameObject tar2 = capsules[k];
-                    //ねじれ
-                    if (isCrumpingPair(tar1.name, tar2.name))
-                    {
-                        Vector3 angv1;
-                        Vector3 angv2;
-                        if (tar1.name.Contains("Shoulder"))
-                        {
-                            angv1 = capsuleApplyer.CapsuleAngVelocities[j][j];
-                            angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                        }
-                        else if (tar2.name.Contains("Shoulder"))
-                        {
-                            angv2 = capsuleApplyer.CapsuleAngVelocities[j][j];
-                            angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                        }
-                        else if (tar1.name.Contains("Upper"))
-                        {
-                            angv1 = capsuleApplyer.CapsuleAngVelocities[j][j];
-                            angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                        }
-                        else
-                        {
-                            angv2 = capsuleApplyer.CapsuleAngVelocities[j][j];
-                            angv1 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                        }
-                        Vector3 crumpingV = calc.CrumpingCalc(angv1, angv2);
-                        Collider c1 = tar1.GetComponent<Collider>();
-                        Collider c2 = tar2.GetComponent<Collider>();
-                        Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
-                        //ここで音を鳴らす
-
-                        float threshold = 0f;
-                        //音再生
-                        if (!isActiveAuidoNearby(false, soundPoint))
-                        {
-                            if (crumpingV.magnitude > threshold)
-                            {
-                                int audioSourceNumber = getAvailableAudioSource(CrumpingSources);
-                                if (audioSourceNumber != -1)
-                                {
-                                    playSound(CrumpingSources[audioSourceNumber], soundPoint, crumpingV, false);
-                                }
-                                else
-                                {
-                                    Debug.Log("crumping -> -1");
-                                }
-                            }
-
-                        }
-                    }
-                    else
-                    {
-                        if (calc.isBounds(tar1, tar2))//こすれ
-                        {
-                            
-                            Vector3 v1 = capsuleApplyer.CapsuleVelocities[i][j];
-                            Vector3 v2 = capsuleApplyer.CapsuleVelocities[i][k];
-                            Vector3 angv1 = capsuleApplyer.CapsuleAngVelocities[i][j];
-                            Vector3 angv2 = capsuleApplyer.CapsuleAngVelocities[i][k];
-                            Vector3 frictionV = calc.FrictionCalc(tar1, tar2, v1, v2, angv1, angv2);
-                            Collider c1 = tar1.GetComponent<Collider>();
-                            Collider c2 = tar2.GetComponent<Collider>();
-                            Vector3 soundPoint = (c1.ClosestPoint(c2.transform.position) + c2.ClosestPoint(c1.transform.position)) / 2f;
-                            float threshold = 0.25f;
-                            //ここで音を鳴らす
-                            if (!isActiveAuidoNearby(true, soundPoint))//近くに再生中音源がないなら
-                            {
-                                if (frictionV.magnitude > threshold) // && frictionTop < frictionPairs.Length
-                                {
-                                    int audioSourceNumber = getAvailableAudioSource(FrictionSources);
-                                    if (audioSourceNumber != -1)
-                                    {
-                                        playSound(FrictionSources[audioSourceNumber], soundPoint, frictionV, true);
-                                    }
-                                    else
-                                    {
-                                        Debug.Log("friction -> -1");
-                                    }
-                                }
-                            }
-                            
-
-                        }
-                    }
-                }
-            }
+            
         }
     }
 

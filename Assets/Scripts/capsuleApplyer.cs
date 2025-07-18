@@ -9,6 +9,7 @@ public class capsuleApplyer : UdonSharpBehaviour
     public statusBoard stb;
     public GameObject ruruneCapsuleParent;
     public GameObject[][] ruruneCapsules;
+    public Collider[][] ruruneColliders;
 
     //速度計算用
     public Vector3[][] CapsuleVelocities = new Vector3[10][];
@@ -19,7 +20,18 @@ public class capsuleApplyer : UdonSharpBehaviour
 
     void Start()
     {
+        //カプセルをクローン
         ruruneCapsules = setCapsulesAllay(ruruneCapsuleParent);
+        //コライダーをクローン
+        ruruneColliders = new Collider[10][];
+        for(int i=0; i<ruruneCapsules.Length; i++)
+        {
+            ruruneColliders[i] = new Collider[(int)HumanBodyBones.LeftToes];
+            for(int j=0; j < ruruneCapsules[i].Length; j++)
+            {
+                ruruneColliders[i][j] = ruruneCapsules[i][j].GetComponent<Collider>();
+            }
+        }
 
         for(int i=0; i<10; i++)
         {

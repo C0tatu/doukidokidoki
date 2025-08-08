@@ -15,7 +15,7 @@ public class OnTriggerDetector : UdonSharpBehaviour
         
         for(int i=0; i<(int)HumanBodyBones.LeftToes; i++)
         {
-            if(this.name == ((HumanBodyBones)i).ToString())
+            if(this.name == ((HumanBodyBones)i).ToString() + "(Clone)")
             {
                 boneNumber = i;
                 return;
@@ -25,27 +25,29 @@ public class OnTriggerDetector : UdonSharpBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-
-        Debug.Log("111111111111111111");
+        Debug.Log($"1   pppp: {playerNumber}   bbbbbbbb: {boneNumber} nnnnnnnnnnn: {this.name}");
+        
         //相手も判定対象なら
         OnTriggerDetector tar = other.GetComponent<OnTriggerDetector>();
         if (tar != null && playerNumber != -1 && boneNumber != -1 && tar.playerNumber != -1 && tar.boneNumber != -1 && (stb.pidStatuses[playerNumber] != 0) && (stb.pidStatuses[tar.playerNumber] != 0))
         {
-            Debug.Log("aaaaaaaaaaaaaaaaaa");
-            int i, j;
-            if (playerNumber < tar.playerNumber)
-            {
-                i = (playerNumber - 1) * (int)HumanBodyBones.LeftToes + boneNumber;
-                j = (tar.playerNumber - 1) * (int)HumanBodyBones.LeftToes + tar.boneNumber;
-            }
-            else
-            {
-                j = (playerNumber - 1) * (int)HumanBodyBones.LeftToes + boneNumber;
-                i = (tar.playerNumber - 1) * (int)HumanBodyBones.LeftToes + tar.boneNumber;
-            }
+            
+                int i, j;
+                if (playerNumber < tar.playerNumber)
+                {
+                    i = (playerNumber - 1) * (int)HumanBodyBones.LeftToes + boneNumber;
+                    j = (tar.playerNumber - 1) * (int)HumanBodyBones.LeftToes + tar.boneNumber;
+                }
+                else
+                {
+                    j = (playerNumber - 1) * (int)HumanBodyBones.LeftToes + boneNumber;
+                    i = (tar.playerNumber - 1) * (int)HumanBodyBones.LeftToes + tar.boneNumber;
+                }
 
-            stb.isFriction[i][j] = true;
+                Debug.Log($"i:{i},j:{j}");
 
+
+                stb.isFriction[i][j] = true;
         }
 
     }
